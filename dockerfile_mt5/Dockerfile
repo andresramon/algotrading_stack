@@ -1,11 +1,12 @@
-FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbullseye
+FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm
 
-# set version label
+# Set version label
 ARG BUILD_DATE
 ARG VERSION
 LABEL build_version="Metatrader Docker:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="gmartin"
 
+# Set environment variables
 ENV TITLE=Metatrader5
 ENV WINEPREFIX="/config/.wine"
 
@@ -15,13 +16,20 @@ RUN apt-get update && apt-get upgrade -y
 # Install required packages
 RUN apt-get install -y \
     python3-pip \
-    wget vim curl \
-    && pip3 install --upgrade pip
+    python3-venv \
+    wget vim curl
+
+# Create a virtual environment
+RUN python3 -m venv /opt/venv
+
+# Activate the virtual environment and upgrade pip
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --upgrade pip
 
 # Add WineHQ repository key and APT source
 RUN wget -q https://dl.winehq.org/wine-builds/winehq.key \
     && apt-key add winehq.key \
-    && add-apt-repository 'deb https://dl.winehq.org/wine-builds/debian/ bullseye main' \
+    && add-apt-repository 'deb https://dl.winehq.org/wine-builds/debian/ bookworm main' \
     && rm winehq.key
 
 # Add i386 architecture and update package lists
@@ -34,9 +42,15 @@ RUN apt-get install --install-recommends -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy Metatrader files and set permissions
 COPY /Metatrader /Metatrader
 RUN chmod +x /Metatrader/start.sh
+
+# Copy root files
 COPY /root /
 
-#EXPOSE 3000 8001
-#VOLUME /config
+# Expose ports (optional, commented out)
+# EXPOSE 3000 8001
+
+# Define volume (optional, commented out)
+# VOLUME /config
